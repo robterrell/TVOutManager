@@ -8,9 +8,14 @@
 
 #import <Foundation/Foundation.h>
 
+typedef enum {
+	kTVOutImplementationMainThread = 0,
+	kTVOutImplementationBackgroundThread = 1,
+	kTVOutImplementationCADisplayLink = 2,
+}TVOutImplementation;
 
 @interface TVOutManager : NSObject {
-
+	TVOutImplementation implementation;
 	UIWindow* deviceWindow;
 	UIWindow* tvoutWindow;
 	NSTimer *updateTimer;
@@ -22,7 +27,7 @@
 }
 
 @property(assign) BOOL tvSafeMode;
-
+@property(assign) TVOutImplementation implementation;
 
 + (TVOutManager *)sharedInstance;
 

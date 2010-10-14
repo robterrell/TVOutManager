@@ -82,6 +82,33 @@
 	[self dismissModalViewControllerAnimated:YES];
 }
 
+- (IBAction) implementationChanged: (id) sender
+{
+	UISegmentedControl *segmentedControl = (UISegmentedControl*) sender;
+	
+	if(videoSwitch.on)
+	{
+		[[TVOutManager sharedInstance] stopTVOut];
+	}
+	
+	if(segmentedControl.selectedSegmentIndex == 0)
+	{
+		[[TVOutManager sharedInstance] setImplementation:kTVOutImplementationMainThread];
+	}
+	else if(segmentedControl.selectedSegmentIndex == 1)
+	{
+		[[TVOutManager sharedInstance] setImplementation:kTVOutImplementationBackgroundThread];
+	}
+	else if(segmentedControl.selectedSegmentIndex == 2)
+	{
+		[[TVOutManager sharedInstance] setImplementation:kTVOutImplementationCADisplayLink];
+	}
+	
+	if(videoSwitch.on)
+	{
+		[[TVOutManager sharedInstance] startTVOut];
+	}
+}
 
 - (IBAction)showInfo:(id)sender {    
 	
