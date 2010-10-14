@@ -11,7 +11,7 @@
 #import <QuartzCore/QuartzCore.h>
 #import "TVOutManager.h"
 
-#define kFPS 30
+#define kFPS 15
 
 //
 // Warning: once again, we can't use UIGetScreenImage for shipping apps (as of late July 2010)
@@ -19,8 +19,8 @@
 // you may want to use it for non-app-store builds (i.e. private demo, trade show build, etc.)
 // Just uncomment both lines below.
 //
-#define USE_UIGETSCREENIMAGE 
-CGImageRef UIGetScreenImage();
+//#define USE_UIGETSCREENIMAGE 
+//CGImageRef UIGetScreenImage();
 //
 
 @implementation TVOutManager
