@@ -12,7 +12,6 @@
 #import "TVOutManager.h"
 
 #define kFPS 15
-#define kUseBackgroundThread	NO
 
 //
 // Warning: once again, we can't use UIGetScreenImage for shipping apps (as of late July 2010)
@@ -20,13 +19,14 @@
 // you may want to use it for non-app-store builds (i.e. private demo, trade show build, etc.)
 // Just uncomment both lines below.
 //
-// #define USE_UIGETSCREENIMAGE 
-// CGImageRef UIGetScreenImage();
+//#define USE_UIGETSCREENIMAGE 
+//CGImageRef UIGetScreenImage();
 //
 
 @implementation TVOutManager
 
 @synthesize tvSafeMode;
+@synthesize implementation;
 
 + (TVOutManager *)sharedInstance
 {
@@ -83,6 +83,23 @@
 		}
 	}
 	tvSafeMode = val;
+}
+
+- (void) setImplementation:(TVOutImplementation) theImplementation
+{
+	if(tvoutWindow && theImplementation != implementation)
+	{
+		NSLog(@"TVOutManager: TVOutManager Started. Can't change implementations while running.");
+	}
+	else 
+	{
+		implementation = theImplementation;
+	}
+}
+
+- (TVOutImplementation) implementation
+{
+	return implementation;
 }
 
 - (void) startTVOut
@@ -154,13 +171,42 @@
 
 		[self updateTVOut];
 
-		if (kUseBackgroundThread) [NSThread detachNewThreadSelector:@selector(updateLoop) toTarget:self withObject:nil];
-		else {
+		
+		if (self.implementation == kTVOutImplementationBackgroundThread)
+		{
+			[NSThread detachNewThreadSelector:@selector(updateLoop) toTarget:self withObject:nil];
+		}
+		else if(self.implementation == kTVOutImplementationMainThread)
+		{
 			updateTimer = [NSTimer scheduledTimerWithTimeInterval: (1.0/kFPS) target: self selector: @selector(updateTVOut) userInfo: nil repeats: YES];
 			[updateTimer retain];
 		}
-				
+		else if(self.implementation == kTVOutImplementationCADisplayLink)
+		{
+			[self performSelectorInBackground:@selector(caDisplayLinkWorker) withObject:nil];
+		}
+		else {
+			NSLog(@"TVOutManager: Unknown implementation. Defaulting to kTVOutImplementationMainThread");
+			[NSThread detachNewThreadSelector:@selector(updateLoop) toTarget:self withObject:nil];
+		}
+
 	}
+}
+
+- (void) caDisplayLinkWorker{
+	done = NO;
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc]init];
+	CADisplayLink *displayLink =	[CADisplayLink displayLinkWithTarget:self selector:@selector(updateTVOutForCADisplayLink)];
+	[displayLink setFrameInterval:(60 / kFPS)];
+	[displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+	[displayLink retain];
+	while (!done) {
+		[[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.5f]];
+	}
+	[displayLink invalidate];
+	[displayLink release];
+	displayLink = nil;
+	[pool release];
 }
 
 - (void) stopTVOut;
@@ -175,6 +221,14 @@
 		mirrorView = nil;
 	}
 }
+
+- (void) updateTVOutForCADisplayLink
+{
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	[self updateTVOut];
+	[pool release];
+}
+
 
 - (void) updateTVOut;
 {
@@ -196,8 +250,16 @@
 	// following code to match Apple's sample at http://developer.apple.com/iphone/library/qa/qa2010/qa1704.html
 	// note that you'll need to pass in a reference to your eaglview to get that to work.
 	
-	UIGraphicsBeginImageContext(deviceWindow.bounds.size);
-    CGContextRef context = UIGraphicsGetCurrentContext();
+	if(UIGraphicsBeginImageContextWithOptions != NULL)
+	{
+		UIGraphicsBeginImageContextWithOptions(deviceWindow.bounds.size, NO, 0);
+	}
+	else 
+	{
+		UIGraphicsBeginImageContext(deviceWindow.bounds.size);
+	}
+
+	CGContextRef context = UIGraphicsGetCurrentContext();
 	
 	// get every window's contents (i.e. so you can see alerts, ads, etc.)
 	for (UIWindow *window in [[UIApplication sharedApplication] windows])

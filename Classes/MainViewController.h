@@ -21,5 +21,5 @@
 - (void)runTimer;
 - (IBAction) toggleSafeMode: (id) sender;
 - (IBAction) toggleVideoOutput: (id) sender;
-
+- (IBAction) implementationChanged: (id) sender;
 @end
